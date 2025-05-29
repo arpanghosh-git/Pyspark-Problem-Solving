@@ -1,0 +1,30 @@
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as fun
+from pyspark.sql.window import Window as win
+
+car_travel_data =[
+    ('c1',	'01-05-2025',	40),
+('c1',	'01-06-2025',	20),
+('c1',	'01-07-2025',	30),
+('c1',	'01-08-2025',	20),
+('c1',	'01-09-2025',	70),
+('c2',	'01-05-2025',	10),
+('c2',	'01-06-2025',	35),
+('c2',	'01-07-2025',	60),
+('c2',	'01-08-2025',	10),
+('c3',	'01-07-2025',	20),
+('c3',	'01-08-2025',	45),
+('c3',	'01-10-2025',	60),
+('c3',	'01-11-2025',	10),
+('c3',	'01-13-2025',	10)
+]
+
+columns = ["car_id","date","km_driven"]
+spark=SparkSession.builder.getOrCreate()
+travel_df = spark.createDataFrame(data=car_travel_data,schema=columns)
+
+win_spec = win.partitionBy(fun.col("car_id")).orderBy(fun.col("date"))\
+              .rangeBetween(win.unboundedPreceding,win.currentRow)
+travel_df=travel_df.withColumn("cum_km_travel",fun.sum("km_driven").over(win_spec))
+
+travel_df.orderBy("car_id","date").show()
